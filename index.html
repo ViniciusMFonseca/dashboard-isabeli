@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Metas — Isabeli Santiago</title>
+
+  <!-- ─── FONTES ───────────────────────────────────────────────────────────
+       Bricolage Grotesque → títulos de seção e headings principais
+       Figtree             → corpo de texto, labels, descrições
+       JetBrains Mono      → todos os valores numéricos e códigos
+  ──────────────────────────────────────────────────────────────────────── -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- ─── CHART.JS via CDN ─────────────────────────────────────────────── -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════
+       TOKENS DE DESIGN — altere aqui para mudar o tema inteiro
+    ═══════════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Cores principais */
+      --navy:          #0C2545;
+      --blue:          #1A5FAD;
+      --blue-mid:      #3B82F6;
+      --blue-soft:     #EBF3FD;
+
+      /* Semânticas */
+      --green:         #076E48;
+      --green-soft:    #D9F5E8;
+      --red:           #B81C1C;
+      --red-soft:      #FDEAEA;
+      --amber:         #A85E08;
+      --amber-soft:    #FEF3CC;
+
+      /* Estrutura */
+      --bg:            #F2F5FA;
+      --bg-inner:      #E8EBF2;
+      --surface:       #FFFFFF;
+      --border:        #DDE3EF;
+      --border-soft:   #EDF0F7;
+
+      /* Tipografia */
+      --text:          #0F1A2E;
+      --text2:         #445268;
+      --text3:         #8896AC;
+
+      /* Geometria */
+      --radius:        14px;
+      --radius-sm:     9px;
+      --shadow:        0 1px 3px rgba(12,37,69,.05), 0 4px 18px rgba(12,37,69,.06);
+      --shadow-hover:  0 2px 8px rgba(12,37,69,.08), 0 10px 32px rgba(12,37,69,.10);
+    }
+
+    /* ─── RESET ──────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Figtree', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ─── LAYOUT WRAPPER ─────────────────────────────────────────────────── */
+    .page { max-width: 1380px; margin: 0 auto; padding: 32px 28px 56px; }
+
+    /* ─── TOPO / HEADER ──────────────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .brand-eyebrow::before {
+      content: '';
+      width: 18px;
+      height: 2.5px;
+      background: var(--blue);
+      border-radius: 2px;
+      display: block;
+    }
+
+    .brand-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: clamp(26px, 3.5vw, 42px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      color: var(--navy);
+      line-height: 1.05;
+    }
+    .brand-title em { font-style: normal; color: var(--blue); }
+
+    .brand-sub {
+      font-size: 12.5px;
+      color: var(--text3);
+      margin-top: 4px;
+    }
+
+    /* ─── CONTROLES DO TOPO (chipMês + timestamp + botão) ───────────────── */
+    .topbar-controls { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+
+    .chip-mes {
+      background: var(--navy);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      padding: 10px 18px;
+      min-width: 110px;
+    }
+    .chip-mes-label {
+      font-size: 9px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      opacity: .55;
+      margin-bottom: 3px;
+    }
+    .chip-mes-val {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+
+    .ts-block { text-align: right; }
+    .ts-label {
+      font-size: 9px;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 3px;
+    }
+    .ts-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .btn-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 18px;
+      font-family: 'Figtree', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s, transform .12s;
+      box-shadow: var(--shadow);
+      white-space: nowrap;
+    }
+    .btn-refresh:hover  { border-color: var(--blue); color: var(--blue); box-shadow: var(--shadow-hover); }
+    .btn-refresh:active { transform: scale(.97); }
+    .btn-refresh svg    { width: 15px; height: 15px; flex-shrink: 0; }
+    .btn-refresh.spin svg { animation: spin .65s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── RÓTULO DE SEÇÃO ────────────────────────────────────────────────── */
+    .sec-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      margin-top: 28px;
+    }
+    .sec-label-dot {
+      width: 7px; height: 7px;
+      background: var(--blue);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sec-label-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .sec-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── CARD BASE ──────────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .card:hover { box-shadow: var(--shadow-hover); }
+
+    .card-head {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-soft);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .card-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      letter-spacing: -.015em;
+    }
+    .card-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+    .card-body  { padding: 20px; }
+    .card-flush { padding: 0; }   /* usado quando a tabela preenche o card */
+
+    /* ─── KPI CARDS (5 indicadores do cenario_atual) ────────────────────── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-top: 3px solid transparent;   /* sobrescrito por .ok / .bad */
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: box-shadow .2s, transform .2s;
+      cursor: default;
+    }
+    .kpi-card:hover   { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+    .kpi-card.ok      { border-top-color: var(--green); }
+    .kpi-card.bad     { border-top-color: var(--red);   }
+
+    /* campo: Indicador */
+    .kpi-name {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--text3);
+      margin-bottom: 10px;
+    }
+
+    /* campo: Atual */
+    .kpi-atual {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--navy);
+      margin-bottom: 14px;
+      line-height: 1;
+    }
+
+    /* barra de progresso: Atual / Meta */
+    .kpi-bar-track {
+      width: 100%;
+      height: 5px;
+      background: var(--bg-inner);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .kpi-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      width: 0;                           /* animado via JS após render */
+      transition: width 1.1s cubic-bezier(.2,.8,.2,1);
+    }
+    .kpi-card.ok  .kpi-bar-fill { background: var(--green); }
+    .kpi-card.bad .kpi-bar-fill { background: var(--red);   }
+
+    .kpi-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    /* campo: Meta */
+    .kpi-meta-label { font-size: 11px; color: var(--text3); }
+    .kpi-meta-val   {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    /* campo: Dif_Pct exibido como badge; campo: Status define a cor */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      letter-spacing: .03em;
+      white-space: nowrap;
+    }
+    .pill.ok   { background: var(--green-soft); color: var(--green); }
+    .pill.bad  { background: var(--red-soft);   color: var(--red);   }
+    .pill.amb  { background: var(--amber-soft);  color: var(--amber); }
+    .pill.neu  { background: var(--bg-inner);    color: var(--text3); }
+
+    /* ─── GRIDS DE LAYOUT ────────────────────────────────────────────────── */
+    .grid-2   { display: grid; grid-template-columns: 1fr 1fr;    gap: 16px; }
+    .grid-3   { display: grid; grid-template-columns: 1fr 1fr 1fr;gap: 16px; }
+
+    /* ─── CANVAS CHART ───────────────────────────────────────────────────── */
+    .chart-wrap { position: relative; }   /* height definido inline por gráfico */
+
+    /* ─── TABELAS ────────────────────────────────────────────────────────── */
+    .dt { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+
+    .dt thead th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: var(--text3);
+      font-weight: 500;
+      padding: 10px 16px 9px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .dt tbody td {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border-soft);
+      color: var(--text2);
+      vertical-align: top;
+    }
+    .dt tbody tr:last-child td { border-bottom: none; }
+    .dt tbody tr:hover td      { background: #F7F9FD; }
+
+    .td-strong { font-weight: 600; color: var(--text); }
+    .td-mono   { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+    .td-neg    { color: var(--green); }   /* diferença negativa = bom em Churn/Netchurn */
+    .td-pos    { color: var(--red);   }   /* diferença positiva = ruim em Downgrade */
+    .td-sm     { font-size: 11px; color: var(--text3); }
+    .td-panorama {
+      font-size: 11.5px;
+      line-height: 1.6;
+      max-width: 320px;
+    }
+
+    /* ─── PRIORIDADES SEMANAIS (campos: Semana, Acao) ────────────────────── */
+    .week-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .week-item {
+      background: var(--bg);
+      border: 1px solid var(--border-soft);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+    }
+    .week-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 5px;
+    }
+    .week-num::before {
+      content: '';
+      width: 10px; height: 2px;
+      background: var(--blue);
+      border-radius: 1px;
+    }
+    .week-acao { font-size: 12px; color: var(--text2); line-height: 1.55; }
+
+    /* ─── PLANO DE AÇÃO (campos: Acao_Estrategica, Status) ──────────────── */
+    .acao-list { display: flex; flex-direction: column; }
+    .acao-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .acao-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .acao-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .acao-nome   { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .acao-status { font-size: 11px; color: var(--text3); }
+
+    /* ─── COMISSIONAMENTO — total highlight ──────────────────────────────── */
+    .comm-total {
+      background: linear-gradient(130deg, var(--navy) 0%, #1A5FAD 100%);
+      border-radius: 10px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .comm-total-label {
+      font-size: 10px;
+      color: rgba(255,255,255,.55);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      margin-bottom: 4px;
+    }
+    .comm-total-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 26px;
+      font-weight: 500;
+      color: #fff;
+      letter-spacing: -.02em;
+    }
+    .comm-total-icon { font-size: 30px; opacity: .35; }
+
+    /* ─── REVERSÕES — linha compacta dentro de tabela ────────────────────── */
+    .rev-action {
+      font-size: 11.5px;
+      color: var(--text2);
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    /* ─── ESTADO: loading / erro ─────────────────────────────────────────── */
+    .state-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .state-card.is-error { border-color: #FBCACA; background: #FFF7F7; }
+    .state-icon  { font-size: 38px; margin-bottom: 14px; }
+    .state-title {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 18px; font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .state-msg   { font-size: 13px; color: var(--text2); line-height: 1.65; max-width: 440px; margin: 0 auto; }
+    .state-card.is-error .state-title { color: var(--red); }
+
+    /* ─── ANIMAÇÃO DE ENTRADA ────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .anim { opacity: 0; animation: fadeUp .45s ease forwards; }
+    /* delays escalonados para a strip de KPI */
+    .anim-d0 { animation-delay: .04s; }
+    .anim-d1 { animation-delay: .09s; }
+    .anim-d2 { animation-delay: .14s; }
+    .anim-d3 { animation-delay: .19s; }
+    .anim-d4 { animation-delay: .24s; }
+    .anim-d5 { animation-delay: .30s; }
+    .anim-d6 { animation-delay: .36s; }
+
+    /* ─── RESPONSIVO ─────────────────────────────────────────────────────── */
+    @media (max-width: 1140px) {
+      .kpi-grid        { grid-template-columns: repeat(3, 1fr); }
+      .grid-2-1, .grid-2 { grid-template-columns: 1fr; }
+      .grid-3          { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px) {
+      .page            { padding: 20px 16px 36px; }
+      .kpi-grid        { grid-template-columns: repeat(2, 1fr); }
+      .grid-3          { grid-template-columns: 1fr; }
+      .week-grid       { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 440px) {
+      .kpi-grid        { grid-template-columns: 1fr; }
+    }
+
+    /* ─── SCROLLBAR ──────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar       { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="page" id="root">
+  <!-- Conteúdo injetado dinamicamente pelo JS abaixo -->
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   ① CONFIGURAÇÃO — EDITE AQUI O CAMINHO DO SEU ARQUIVO CSV
+   ════════════════════════════════════════════════════════════════════════════
+   Se o CSV estiver no mesmo diretório que este HTML, use apenas o nome do arquivo.
+   Exemplo: './meu_arquivo.csv'
+   Para URL absoluta: 'https://meuservidor.com/dados/metas.csv'
+   ──────────────────────────────────────────────────────────────────────────
+   ⚠  O fetch usa anti-cache (?_=timestamp). Se o servidor não permitir CORS,
+      use o dado embutido em FALLBACK_CSV abaixo.
+   ════════════════════════════════════════════════════════════════════════════ */
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTQ431yVzJ4HXttEQEEHwXT6fCuw-Z2E9EqK_xtxe0LiPURNfPxAxvUsMAxrU7aDTUDRLkCRpKnVSj6/pub?gid=862318801&single=true&output=csv';
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ② DADO EMBUTIDO (FALLBACK)
+   Usado automaticamente se o fetch falhar (ex: abrir o HTML como arquivo local).
+   Copie o conteúdo do CSV aqui se necessário.
+   ════════════════════════════════════════════════════════════════════════════ */
+const FALLBACK_CSV = atob('TUVTX0FUSVZPLE1hcsOnbywsLCwsLA0KLCwsLCwsLA0KU0VDQU8sY2VuYXJpb19hdHVhbCwsLCwsLA0KSW5kaWNhZG9yLE1ldGEsQXR1YWwsRGlmZXJlbmNhLERpZl9QY3QsU3RhdHVzLCwNCk5ldGNodXJuLCJSJCA4LjMzOCw4MSIsIlIkIDQuMTAyLDg1IiwiLVIkIDQuMjM1LDk2IiwiLTUwLDglIizwn5+iIE9LLCwNCkNodXJuLCJSJCA3LjAwMCwwMCIsIlIkIDIuMDAwLDAwIiwiLVIkIDUuMDAwLDAwIiwiLTcxLDQlIizwn5+iIE9LLCwNCkRvd25ncmFkZSwiUiQgMS4wNTAsMDAiLCJSJCAxLjY0Nyw5MCIsIlIkIDU5Nyw5MCIsIjU2LDklIizwn5S0IEFsZXJ0YSwsDQpVcHNlbGwsIlIkIDEuMTgxLDAwIiwiUiQgMjk0LDA1IiwiLVIkIDg4Niw5NSIsIi03NSwxJSIs8J+UtCBBbGVydGEsLA0KSW5hZGltcGzDqm5jaWEsIlIkIDEuNDY5LDgxIiwiUiQgNzQ5LDAwIiwiLVIkIDcyMCw4MSIsIi00OSwwJSIs8J+foiBPSywsDQosLCwsLCwsDQpTRUNBTyxjZW5hcmlvX3ByZXZpc3RvLCwsLCwsDQpJbmRpY2Fkb3IsTWV0YSxQcmV2aXN0byxEaWZfQXR1YWxfUHJldmlzdG8sRGlmX1BjdCxTdGF0dXMsLA0KTmV0Y2h1cm4sIlIkIDguMzM4LDgxIiwsIlIkIDQuMTAyLDg1IiwiNDksMiUiLPCfn6IgT0ssLA0KQ2h1cm4sIlIkIDcuMDAwLDAwIiwiUiQgMTEuMDAwLDAwIiwiLVIkIDkuMDAwLDAwIiwiLTEyOCw2JSIs8J+UtCBBbGVydGEsLA0KRG93bmdyYWRlLCJSJCAxLjA1MCwwMCIsIlIkIDEuNjQ3LDkwIiwiUiQgMCwwMCIsIjAsMCUiLPCflLQgQWxlcnRhLCwNClVwc2VsbCwiUiQgMS4xODEsMDAiLCJSJCAyOTQsMDUiLCJSJCAwLDAwIiwiMCwwJSIs8J+UtCBBbGVydGEsLA0KSW5hZGltcGzDqm5jaWEsIlIkIDEuNDY5LDgxIiwiUiQgNzQ5LDAwIiwiUiQgMCwwMCIsIjAsMCUiLPCfn6IgT0ssLA0KLCwsLCwsLA0KU0VDQU8scGxhbm9fYWNhbywsLCwsLA0KQWNhb19Fc3RyYXRlZ2ljYSxTdGF0dXMsLCwsLCwNCkluYWRpbXBsw6puY2lhLEVtIEFuZGFtZW50bywsLCwsLA0KUmV2ZXJzw6NvIGRvIGNhbmNlbGFtZW50byxFbSBBbmRhbWVudG8sLCwsLCwNCiwsLCwsLCwNClNFQ0FPLHByaW9yaWRhZGVzLCwsLCwsDQpTZW1hbmEsQWNhbywsLCwsLA0KU2VtYW5hIDEsRW50cmFyIGVtIGNvbnRhdG8gY29tIGEgRmVyc28gRXNnLCwsLCwsDQpTZW1hbmEgMixFbnRyYXIgZW0gY29udGF0byBjb20gYSBXaGl0ZSBTZWd1cmFuw6dhLCwsLCwsDQpTZW1hbmEgMywiVGVudGFyIGNvbnRhdG8gY29tIG8gw4lyaXRvbiwgcGFyYSBlbnRlbmRlciBjb21vIHZhaSBzZXIgb3MgcHLDs3hpbW9zIHBhc3NvcyIsLCwsLCwNClNlbWFuYSA0LCJJbmFkaW1wbMOqbmNpYSBkZSBNYXLDp28sIHJlYWxpemFuZG8gbyBGdXAgY29tIG9zIGNsaWVudGVzIHF1ZSBlc3TDo28gaW5hZGltcGxlbnRlcywgcG9yIFdoYXRzQXBwL0UtbWFpbC9UZWxlZm9uZSIsLCwsLCwNCiwsLCwsLCwNClNFQ0FPLHJldmVyc29lcywsLCwsLA0KRW1wcmVzYSxDb250YXRvLFNMLFBhbm9yYW1hLFZhbG9yX1Jpc2NvLEV4cGVjdGF0aXZhLEFjYW8sUmV2ZXJ0ZXUNClBvbnRvIERvaXMgQ29tdW5pY2HDp8OjbyxFcml0b24sMTA1MTgsIkthcmluYSwgcmVhbGl6b3UgdW1hIGNhbGwgY29tIG8gw4lyaXRvbiwgcG9ycXVlIG8gUm9nw6lyaW8gaGF2aWEgaW5mb3JtYWRvIHF1ZSB2w6NvIGRlc2NvbnRpbnVhciBvIHVzbyBkYSBmZXJyYW1lbnRhLCBtYXMgZHVyYW50ZSBhIGNhbGwgbyDDiXJpdG9uIGluZm9ybW91IHF1ZSB2w6NvIGNvbnRpbnVhciBjb20gYSBmZXJyYW1lbnRhLiBFc3RvdSB0ZW50YW5kbyBjb250YXRvIHBvcnF1ZSBuw6NvIGhvdXZlIHBhZ2FtZW50byBkYSBtZW5zYWxpZGFkZSBkZSBtYXLDp28iLCJSJCA3NDYsMzAiLEFsdGEsRXN0b3UgdGVudGFuZG8gY29udGF0byBjb20gbyDDiXJpdG9uIGUgbyBSb2fDqXJpbyBwYXJhIG1hcmNhciB1bWEgc2VndW5kYSBjYWxsIGUgZW50ZW5kZXIgY29tbyBlbGVzIHF1ZXJlbSBzZWd1aXIgZSBvIHBhZ2FtZW50byBkYSBtZW5zYWxpZGFkZSBkZSBtYXLDp28uLFNpbQ0KVHJpYWwgRW5nZW5oYXJpYSxDYXJvbCw1NzEyLCJTb2xpY2l0YXJhbSBjYW5jZWxhbWVudG8gcG9ycXVlIGVzdMOjbyBtdWRhbmRvIGEgZXN0cmF0w6lnb2EgZGUgcHJvc3Blw6fDo28gcGFyYSB1bWEgdGVyY2Vpcml6YWRhLCBtYXMgYSBDYXJvbCBnb3N0YSBtdWl0byBkYSBSYW1wZXIgZSBhYnJpdSB1bWEgcG9zc2liaWxpZGFkZSBkZSBkZWl4YXIgbyBSYW1wZXIgYXRpdm8gZW5xdWFudG8gZWxlcyB0ZXN0YW0gZXNzYSBub3ZhIGZlcnJhbWVudGEgZSBjYXNvIGVsZXMgbsOjbyBzZSBhZHB0ZW0gcmV0b3JuYXJlbSBjb20gb3MgZGFkb3MgYXRpdm9zIiwiUiQgMS4yNjQsNjUiLEFsdGEsIlBvbGV0aSB0ZW50b3UgY29udGF0byBjb20gYSBDYXJvbCwgbWFzIGVsYSByZWFsbWVudGUgb3B0b3UgcGVsbyBjYW5jZWxhbWVudG8iLFNpbQ0KRnJvZXMsTHVhbmEsNjIwMCxUZXN0ZSwiUiQgODc4LDAwIixBbHRhLFRlc3RlLFNpbQ0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KLCwsLCwsLA0KU0VDQU8sY29taXNzaW9uYW1lbnRvLCwsLCwsDQpFbXByZXNhLFNMLFByb2R1dG8sVGlwbyxWYWxvcixWYWxvcl9SZWNlYmVyLCwNCkNNUCwzNTM0LFByb3NwZWN0LFVwc2VsbCwiUiQyMDAsMDAiLCJSJCAxMDAsMDAiLCwNCkNNUCwzNTM0LE1hcmtldGluZyxDcm9zc2VsLCJSJDY1MCwwMCIsIlIkIDE2Miw1MCIsLA==').split('').map((c,i,a) => c).join('');
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ③ ENGINE DE PARSE CSV
+   Suporta: vírgula ou ponto-e-vírgula; aspas RFC4180; CRLF/LF; UTF-8.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/** Detecta o separador real contando ocorrências fora de aspas nas 6 primeiras linhas */
+function detectSep(raw) {
+  const sample = raw.split('\n').slice(0, 6).join('\n');
+  let commas = 0, semis = 0, inQ = false;
+  for (const ch of sample) {
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (!inQ) { if (ch === ',') commas++; else if (ch === ';') semis++; }
+  }
+  return semis > commas ? ';' : ',';
+}
+
+/** Divide uma linha CSV respeitando campos entre aspas */
+function splitRow(line, sep) {
+  const cells = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; } // aspas escapadas ""
+      else inQ = !inQ;
+    } else if (ch === sep && !inQ) {
+      cells.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+/** Normaliza chave de header: minúsculo, sem acentos, underscores no lugar de espaços */
+function normKey(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // remove acentos
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
+/** Verifica se todas as células de uma linha são vazias */
+function isBlank(cells) { return cells.every(c => !c || !c.trim()); }
+
+/**
+ * Converte string monetária BRL → número float.
+ * Aceita: "R$ 1.234,56" | "R$200,00" | "-R$ 886,95"
+ */
+function parseBRL(s) {
+  if (!s) return null;
+  const neg = s.includes('-');
+  const n = parseFloat(
+    s.replace(/[R$\s\-]/g, '')
+     .replace(/\./g, '')    // remove separador de milhar
+     .replace(',', '.')     // vírgula decimal → ponto
+  );
+  return isNaN(n) ? null : (neg ? -Math.abs(n) : n);
+}
+
+/**
+ * Converte string de percentual BRL → número float.
+ * Aceita: "-50,8%" | "56,9%" | "-128,6%"
+ */
+function parsePct(s) {
+  if (!s) return null;
+  const n = parseFloat(String(s).replace('%', '').replace(',', '.').trim());
+  return isNaN(n) ? null : n;
+}
+
+/**
+ * Parser principal — retorna { mesAtivo, sections }.
+ * Estrutura do CSV é baseada em marcadores SECAO; cada seção tem seu próprio header.
+ */
+function parseCSV(raw) {
+  const sep = detectSep(raw);
+  const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+  let mesAtivo = null;
+  const sections = {};
+  let curSection = null;
+  let headers = null;
+
+  for (const line of lines) {
+    const cells = splitRow(line, sep);
+    if (isBlank(cells)) { headers = null; continue; }  // linha vazia — reseta headers da seção
+
+    const c0 = normKey(cells[0]);
+
+    if (c0 === 'mes_ativo') { mesAtivo = cells[1]?.trim() || null; continue; }
+
+    if (c0 === 'secao') {
+      curSection = normKey(cells[1]);
+      sections[curSection] = [];
+      headers = null;
+      continue;
+    }
+
+    if (!curSection) continue;
+
+    // A primeira linha de dados após uma SECAO é sempre o header
+    if (headers === null) {
+      headers = cells.map(normKey).filter(Boolean);
+      continue;
+    }
+
+    // Monta objeto com chave normalizada → valor bruto
+    const row = {};
+    headers.forEach((h, i) => { row[h] = (cells[i] || '').trim(); });
+    if (!isBlank(Object.values(row))) sections[curSection].push(row);
+  }
+
+  return { mesAtivo, sections };
+}
+
+/**
+ * Valida se todas as colunas obrigatórias existem em cada seção.
+ * Retorna array de strings de erro (vazio = tudo ok).
+ */
+function validate(data) {
+  const required = {
+    /* campos reais do CSV — nunca invente colunas aqui */
+    cenario_atual:    ['indicador', 'meta', 'atual', 'diferenca', 'dif_pct', 'status'],
+    cenario_previsto: ['indicador', 'meta', 'previsto', 'dif_atual_previsto', 'dif_pct', 'status'],
+    plano_acao:       ['acao_estrategica', 'status'],
+    prioridades:      ['semana', 'acao'],
+    reversoes:        ['empresa', 'contato', 'sl', 'panorama', 'valor_risco', 'expectativa', 'acao', 'reverteu'],
+    comissionamento:  ['empresa', 'sl', 'produto', 'tipo', 'valor', 'valor_receber'],
+  };
+  const errs = [];
+  for (const [sec, cols] of Object.entries(required)) {
+    const rows = data.sections[sec];
+    if (!rows?.length) { errs.push(`Seção <strong>${sec}</strong> não encontrada ou vazia.`); continue; }
+    const keys = Object.keys(rows[0]);
+    cols.forEach(c => { if (!keys.includes(c)) errs.push(`Coluna obrigatória <strong>${c}</strong> ausente em <strong>${sec}</strong>.`); });
+  }
+  return errs;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ④ HELPERS DE FORMATAÇÃO
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/** Formata número como moeda BRL ("R$ 1.234,56") */
+function fmtBRL(n) {
+  if (n === null || isNaN(n)) return '—';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
+}
+
+/**
+ * Classifica o campo Status (que pode conter emoji: "🟢 OK" / "🔴 Alerta").
+ * Retorna: 'ok' | 'bad' | 'amb'
+ */
+function statusCls(s) {
+  if (!s) return 'neu';
+  const v = s.toLowerCase();
+  if (v.includes('ok') || v.includes('sim')) return 'ok';
+  if (v.includes('alerta') || v.includes('não')) return 'bad';
+  return 'amb';
+}
+
+/** Label limpa do Status (remove emoji para uso em texto) */
+function statusLabel(s) {
+  return String(s || '').replace(/[\u{1F300}-\u{1FAFF}]/gu, '').trim() || s;
+}
+
+/** Porcentagem de preenchimento da barra (0-100), clampado */
+function barFill(atual, meta) {
+  if (!meta || meta === 0) return 0;
+  return Math.min(100, Math.max(0, Math.round(Math.abs(atual) / Math.abs(meta) * 100)));
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ⑤ GERENCIAMENTO DE INSTÂNCIAS CHART.JS
+   Destruir antes de recriar evita "Canvas already in use"
+   ════════════════════════════════════════════════════════════════════════════ */
+const _charts = {};
+
+function mkChart(id, config) {
+  if (_charts[id]) { _charts[id].destroy(); }
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  _charts[id] = new Chart(ctx.getContext('2d'), config);
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ⑥ RENDERIZAÇÃO DO DASHBOARD
+   Cada bloco de HTML corresponde a uma seção do CSV.
+   ════════════════════════════════════════════════════════════════════════════ */
+function render(data, ts) {
+  const { mesAtivo, sections } = data;
+  const root = document.getElementById('root');
+
+  /* ── Destruir gráficos antigos antes de reescrever o DOM ── */
+  Object.values(_charts).forEach(c => c.destroy());
+
+  /* ── Dados das seções (campos exatos do CSV) ── */
+  const atual    = sections.cenario_atual    || [];
+  const previsto = sections.cenario_previsto || [];
+  const acoes    = sections.plano_acao       || [];
+  const prios    = sections.prioridades      || [];
+  const revs     = sections.reversoes        || [];
+  const comms    = sections.comissionamento  || [];
+
+  /* ────────────────────────────────────────────────────────────────────────
+     HEADER
+  ─────────────────────────────────────────────────────────────────────── */
+  const okCount = atual.filter(r => statusCls(r.status) === 'ok').length;
+  const scoreColor = okCount / atual.length >= .7 ? 'var(--green)' : okCount / atual.length >= .4 ? 'var(--amber)' : 'var(--red)';
+  const scoreLabel = `${okCount}/${atual.length} OK`;
+
+  /* ────────────────────────────────────────────────────────────────────────
+     KPI CARDS — campos usados: Indicador, Meta, Atual, Dif_Pct, Status
+  ─────────────────────────────────────────────────────────────────────── */
+  const kpiDelay = ['anim-d0','anim-d1','anim-d2','anim-d3','anim-d4'];
+  const kpiHTML = atual.map((r, i) => {
+    const metaV  = parseBRL(r.meta);
+    const atualV = parseBRL(r.atual);
+    const pctV   = parsePct(r.dif_pct);
+    const sc     = statusCls(r.status);
+    const fill   = barFill(atualV, metaV);
+    const pctTxt = pctV !== null ? (pctV > 0 ? `+${pctV.toFixed(1)}%` : `${pctV.toFixed(1)}%`) : '—';
+    return `
+    <div class="kpi-card ${sc} anim ${kpiDelay[i] || ''}">
+      <div class="kpi-name">${r.indicador}</div>
+      <div class="kpi-atual">${fmtBRL(atualV)}</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" data-fill="${fill}"></div>
+      </div>
+      <div class="kpi-foot">
+        <div>
+          <span class="kpi-meta-label">Meta </span>
+          <span class="kpi-meta-val">${fmtBRL(metaV)}</span>
+        </div>
+        <span class="pill ${sc}">${pctTxt}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* ────────────────────────────────────────────────────────────────────────
+     CENÁRIO PREVISTO — campos: Indicador, Meta, Previsto, Dif_Atual_Previsto,
+                                 Dif_Pct, Status
+  ─────────────────────────────────────────────────────────────────────── */
+  const prevRows = previsto.map(r => {
+    const sc   = statusCls(r.status);
+    const difV = parseBRL(r.dif_atual_previsto);
+    const pctV = parsePct(r.dif_pct);
+    const pctTxt = pctV !== null ? (pctV >= 0 ? `+${pctV.toFixed(1)}%` : `${pctV.toFixed(1)}%`) : '—';
+    const difCls = difV !== null && difV < 0 ? 'td-neg' : 'td-pos';
+    return `<tr>
+      <td class="td-strong">${r.indicador}</td>
+      <td class="td-mono">${fmtBRL(parseBRL(r.meta))}</td>
+      <td class="td-mono">${r.previsto ? fmtBRL(parseBRL(r.previsto)) : '—'}</td>
+      <td class="td-mono ${difCls}">${fmtBRL(difV)}</td>
+      <td class="td-mono">${pctTxt}</td>
+      <td><span class="pill ${sc}">${statusLabel(r.status)}</span></td>
+    </tr>`;
+  }).join('');
+
+  /* ────────────────────────────────────────────────────────────────────────
+     PRIORIDADES SEMANAIS — campos: Semana, Acao
+  ─────────────────────────────────────────────────────────────────────── */
+  const prioHTML = prios.map(r => `
+    <div class="week-item">
+      <div class="week-num">${r.semana}</div>
+      <div class="week-acao">${r.acao}</div>
+    </div>`).join('');
+
+  /* ────────────────────────────────────────────────────────────────────────
+     PLANO DE AÇÃO — campos: Acao_Estrategica, Status
+  ─────────────────────────────────────────────────────────────────────── */
+  const icons = ['📋', '🔄', '📊', '🎯', '✅'];
+  const acoesHTML = acoes.map((r, i) => `
+    <div class="acao-item">
+      <div class="acao-icon">${icons[i % icons.length]}</div>
+      <div>
+        <div class="acao-nome">${r.acao_estrategica}</div>
+        <div class="acao-status">${r.status}</div>
+      </div>
+    </div>`).join('');
+
+  /* ────────────────────────────────────────────────────────────────────────
+     REVERSÕES — campos: Empresa, Contato, SL, Panorama,
+                          Valor_Risco, Expectativa, Acao, Reverteu
+  ─────────────────────────────────────────────────────────────────────── */
+  const revRows = revs.map(r => {
+    const scRev = statusCls(r.reverteu);
+    return `<tr>
+      <td class="td-strong">${r.empresa}</td>
+      <td>${r.contato}</td>
+      <td class="td-mono td-sm">${r.sl}</td>
+      <td class="td-panorama">${r.panorama}</td>
+      <td class="td-mono" style="color:var(--red);white-space:nowrap">${fmtBRL(parseBRL(r.valor_risco))}</td>
+      <td><span class="pill amb">${r.expectativa}</span></td>
+      <td class="rev-action">${r.acao}</td>
+      <td><span class="pill ${scRev}">${r.reverteu}</span></td>
+    </tr>`;
+  }).join('');
+
+  const totalRisco = revs.reduce((a, r) => a + (parseBRL(r.valor_risco) || 0), 0);
+
+  /* ────────────────────────────────────────────────────────────────────────
+     COMISSIONAMENTO — campos: Empresa, SL, Produto, Tipo, Valor, Valor_Receber
+  ─────────────────────────────────────────────────────────────────────── */
+  const totalComm = comms.reduce((a, r) => a + (parseBRL(r.valor_receber) || 0), 0);
+
+  const commRows = comms.map(r => {
+    const tipoCls = r.tipo?.toLowerCase().includes('ups') ? 'ok' : 'amb';
+    return `<tr>
+      <td class="td-strong">${r.empresa} <span class="td-mono td-sm">#${r.sl}</span></td>
+      <td>${r.produto}</td>
+      <td><span class="pill ${tipoCls}">${r.tipo}</span></td>
+      <td class="td-mono">${fmtBRL(parseBRL(r.valor))}</td>
+      <td class="td-mono" style="color:var(--amber);font-weight:600">${fmtBRL(parseBRL(r.valor_receber))}</td>
+    </tr>`;
+  }).join('');
+
+  /* ────────────────────────────────────────────────────────────────────────
+     MONTAGEM DO HTML — ordem: topo → KPIs → gráficos → tabelas → rodapé
+  ─────────────────────────────────────────────────────────────────────── */
+  root.innerHTML = `
+
+  <!-- ── TOPO ── -->
+  <header class="topbar anim anim-d0">
+    <div>
+      <div class="brand-eyebrow">Acompanhamento de Metas · CS</div>
+      <div class="brand-title">Isabeli <em>Santiago</em></div>
+      <div class="brand-sub">Customer Success Manager · Resumo mensal de performance</div>
+    </div>
+    <div class="topbar-controls">
+      <div class="ts-block">
+        <div class="ts-label">Última atualização</div>
+        <div class="ts-val">${ts}</div>
+      </div>
+      <div class="chip-mes">
+        <div class="chip-mes-label">Mês ativo</div>
+        <div class="chip-mes-val">${mesAtivo || '—'}</div>
+      </div>
+      <button class="btn-refresh" id="btnRefresh" onclick="loadData()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.5 8A6.5 6.5 0 1 0 3 3.5"/><path d="M1.5 3.5v4h4"/>
+        </svg>
+        Atualizar dados
+      </button>
+    </div>
+  </header>
+
+  <!-- ── KPI STRIP — cenario_atual ── -->
+  <div class="sec-label anim anim-d1">
+    <div class="sec-label-dot"></div>
+    <div class="sec-label-text">Indicadores · Cenário Atual</div>
+    <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:${scoreColor};flex-shrink:0">${scoreLabel}</span>
+  </div>
+  <div class="kpi-grid" style="margin-bottom:0">${kpiHTML}</div>
+
+  <!-- ── GRÁFICO — Meta vs Atual ── -->
+  <div class="sec-label anim anim-d2" style="margin-top:32px">
+    <div class="sec-label-dot"></div>
+    <div class="sec-label-text">Análise Visual</div>
+  </div>
+  <div class="anim anim-d3">
+    <!-- Gráfico: Meta vs Atual (campos: Indicador, Meta, Atual) -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Meta vs. Atual</span>
+        <span class="card-badge">cenario_atual</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:280px">
+          <canvas id="chart-meta-atual"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CENÁRIO PREVISTO (tabela completa) ── -->
+  <div class="sec-label anim anim-d4" style="margin-top:32px">
+    <div class="sec-label-dot"></div>
+    <div class="sec-label-text">Cenário Previsto</div>
+  </div>
+  <div class="card anim anim-d5">
+    <div class="card-flush">
+      <table class="dt">
+        <thead><tr>
+          <th>Indicador</th>
+          <th>Meta</th>
+          <th>Previsto</th>
+          <th>Dif. Atual/Previsto</th>
+          <th>Dif%</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${prevRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── EXECUÇÃO: Prioridades | Plano de Ação | Comissionamento ── -->
+  <div class="sec-label anim anim-d5" style="margin-top:32px">
+    <div class="sec-label-dot"></div>
+    <div class="sec-label-text">Execução &amp; Pipeline</div>
+  </div>
+  <div class="grid-3 anim anim-d5">
+
+    <!-- Prioridades — campos: Semana, Acao -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Prioridades Semanais</span></div>
+      <div class="card-body">
+        <div class="week-grid">${prioHTML}</div>
+      </div>
+    </div>
+
+    <!-- Plano de Ação — campos: Acao_Estrategica, Status -->
+    <div class="card">
+      <div class="card-head"><span class="card-title">Plano de Ação</span></div>
+      <div class="card-body"><div class="acao-list">${acoesHTML}</div></div>
+    </div>
+
+    <!-- Comissionamento — campos: Empresa, SL, Produto, Tipo, Valor, Valor_Receber -->
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Comissionamento</span>
+        <span class="card-badge">${fmtBRL(totalComm)} a receber</span>
+      </div>
+      <div class="card-body">
+        <div class="comm-total">
+          <div>
+            <div class="comm-total-label">Total a Receber</div>
+            <div class="comm-total-val">${fmtBRL(totalComm)}</div>
+          </div>
+          <div class="comm-total-icon">💰</div>
+        </div>
+        <table class="dt">
+          <thead><tr><th>Empresa/SL</th><th>Produto</th><th>Tipo</th><th>Valor</th><th>A Receber</th></tr></thead>
+          <tbody>${commRows}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── REVERSÕES (tabela completa com todos os 8 campos) ── -->
+  <div class="sec-label anim anim-d6" style="margin-top:32px">
+    <div class="sec-label-dot"></div>
+    <div class="sec-label-text">Reversões · ${revs.length} conta(s) · ${fmtBRL(totalRisco)} em risco</div>
+  </div>
+  <div class="card anim anim-d6" style="overflow-x:auto">
+    <div class="card-flush">
+      <table class="dt">
+        <thead><tr>
+          <th>Empresa</th>
+          <th>Contato</th>
+          <th>SL</th>
+          <th>Panorama</th>
+          <th>Valor Risco</th>
+          <th>Expectativa</th>
+          <th>Ação</th>
+          <th>Reverteu</th>
+        </tr></thead>
+        <tbody>${revRows}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── RODAPÉ ── -->
+  <footer style="margin-top:40px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)">
+    <span>dashboard · isabeli santiago · ${mesAtivo || 'março'} 2025</span>
+    <span>sincronizado às ${ts}</span>
+  </footer>`;
+
+
+  /* ════════════════════════════════════════════════════════════════════════
+     ⑦ ANIMAÇÃO DAS BARRAS DE PROGRESSO
+     Acionado após o DOM ser pintado (rAF duplo garante que o CSS já aplicou)
+  ════════════════════════════════════════════════════════════════════════ */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('.kpi-bar-fill').forEach(el => {
+      el.style.width = el.dataset.fill + '%';
+    });
+  }));
+
+
+  /* ════════════════════════════════════════════════════════════════════════
+     ⑧ GRÁFICOS CHART.JS
+     Cada gráfico usa apenas os campos reais da sua seção.
+  ════════════════════════════════════════════════════════════════════════ */
+
+  /* Paleta de cores compartilhada */
+  const C = {
+    blue:       '#1A5FAD',
+    blueTr:     'rgba(26,95,173,.14)',
+    green:      '#076E48',
+    greenTr:    'rgba(7,110,72,.72)',
+    red:        '#B81C1C',
+    redTr:      'rgba(184,28,28,.72)',
+    grid:       '#EDF0F7',
+    tick:       '#8896AC',
+  };
+
+  /* Config base para tooltips (reutilizada nos 4 gráficos) */
+  const tooltipBase = {
+    backgroundColor: '#fff',
+    borderColor: '#DDE3EF',
+    borderWidth: 1,
+    titleColor: '#0F1A2E',
+    bodyColor: '#445268',
+    padding: 12,
+    titleFont: { family: 'Bricolage Grotesque', size: 13, weight: '700' },
+    bodyFont:  { family: 'JetBrains Mono', size: 12 },
+  };
+
+  /* ── Gráfico 1: Meta vs Atual (campos: Indicador, Meta, Atual) ─────── */
+  mkChart('chart-meta-atual', {
+    type: 'bar',
+    data: {
+      labels: atual.map(r => r.indicador),
+      datasets: [
+        {
+          label: 'Meta',
+          data: atual.map(r => parseBRL(r.meta)),
+          backgroundColor: C.blueTr,
+          borderColor: C.blue,
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        },
+        {
+          label: 'Atual',
+          data: atual.map(r => parseBRL(r.atual)),
+          backgroundColor: atual.map(r => statusCls(r.status) === 'ok' ? C.greenTr : C.redTr),
+          borderColor:     atual.map(r => statusCls(r.status) === 'ok' ? C.green   : C.red),
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { font: { family: 'Figtree', size: 12 }, color: '#445268', boxWidth: 12, boxHeight: 12, padding: 16 } },
+        tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtBRL(ctx.raw)}` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Figtree', size: 12 }, color: C.tick }, border: { display: false } },
+        y: { grid: { color: C.grid }, ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: C.tick, callback: v => `R$${(v/1000).toFixed(0)}k` }, border: { display: false } }
+      }
+    }
+  });
+
+} /* fim render() */
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ⑨ ESTADO DE ERRO
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderError(title, msg) {
+  document.getElementById('root').innerHTML = `
+    <div class="state-card is-error" style="margin-top:60px;max-width:600px;margin-left:auto;margin-right:auto">
+      <div class="state-icon">⚠️</div>
+      <div class="state-title">${title}</div>
+      <div class="state-msg">${msg}</div>
+      <button class="btn-refresh" style="margin:24px auto 0;display:inline-flex" onclick="loadData()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1.5 8A6.5 6.5 0 1 0 3 3.5"/><path d="M1.5 3.5v4h4"/>
+        </svg>
+        Tentar novamente
+      </button>
+    </div>`;
+}
+
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ⑩ CARREGAMENTO DE DADOS — fetch com anti-cache + fallback embutido
+   ════════════════════════════════════════════════════════════════════════════ */
+async function loadData() {
+  /* Ativa spinner no botão, se já existe */
+  document.getElementById('btnRefresh')?.classList.add('spin');
+
+  /* Timestamp da atualização */
+  const ts = new Date().toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
+
+  try {
+    let csvText = null;
+
+    /* Tenta buscar o CSV real — valida se o conteúdo não é HTML */
+    try {
+      const sep = CSV_URL.includes('?') ? '&' : '?';
+      const res = await fetch(`${CSV_URL}${sep}_=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+      });
+      if (res.ok) {
+        const text = await res.text();
+        /* Rejeita se vier HTML (ex: página de login ou erro do Google) */
+        const isHTML = text.trimStart().startsWith('<');
+        /* Rejeita se não contiver o marcador SECAO que esperamos */
+        const hasStructure = /SECAO/i.test(text);
+        if (!isHTML && hasStructure) csvText = text;
+      }
+    } catch (_) {
+      /* silently fall through — usará o fallback abaixo */
+    }
+
+    /* Se o fetch falhou ou retornou HTML, usa o dado embutido */
+    if (!csvText) csvText = FALLBACK_CSV;
+
+    /* Parse + validação */
+    const data = parseCSV(csvText);
+    const errs = validate(data);
+    if (errs.length) {
+      renderError('Estrutura do CSV inválida', errs.join('<br>'));
+      return;
+    }
+
+    /* Renderiza o dashboard */
+    render(data, ts);
+
+  } catch (err) {
+    renderError(
+      'Não foi possível carregar os dados',
+      `Erro inesperado: <code>${err.message}</code><br><br>
+       Verifique se o caminho do CSV está correto em <code>CSV_URL</code> no início do script.`
+    );
+  } finally {
+    document.getElementById('btnRefresh')?.classList.remove('spin');
+  }
+}
+
+/* Inicializa ao carregar a página */
+loadData();
+</script>
+</body>
+</html>
